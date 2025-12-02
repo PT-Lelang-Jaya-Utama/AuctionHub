@@ -293,14 +293,12 @@ export class RecommendationRepository implements OnModuleInit {
         WHERE similar.productId <> $productId
         WITH p, similar, 1 as categoryMatch
         
-        // Find products that same users have bid on
-        OPTIONAL MATCH (u:User)-[:BID]->(p)
-        OPTIONAL MATCH (u)-[:BID]->(similar)
+        // Find users who bid on BOTH products (shared bidders)
+        OPTIONAL MATCH (u:User)-[:BID]->(p), (u)-[:BID]->(similar)
         WITH p, similar, categoryMatch, COUNT(DISTINCT u) as sharedBidders
         
-        // Find products that same users have viewed (view overlap)
-        OPTIONAL MATCH (v:User)-[:VIEWED]->(p)
-        OPTIONAL MATCH (v)-[:VIEWED]->(similar)
+        // Find users who viewed BOTH products (shared viewers)
+        OPTIONAL MATCH (v:User)-[:VIEWED]->(p), (v)-[:VIEWED]->(similar)
         WITH p, similar, categoryMatch, sharedBidders, COUNT(DISTINCT v) as sharedViewers
         
         // Check for explicit SIMILAR_TO relationships
