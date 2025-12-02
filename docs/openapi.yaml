@@ -507,6 +507,12 @@ paths:
       operationId: getProductById
       tags: [Products]
       summary: Get product by ID
+      description: |
+        Retrieves product details. If authenticated, the view is tracked for recommendations.
+        Authentication is optional - anonymous users can view products but their views won't be tracked.
+      security:
+        - bearerAuth: []
+        - {}
       parameters:
         - name: id
           in: path
