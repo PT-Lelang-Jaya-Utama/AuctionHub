@@ -1,22 +1,24 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { RecommendationService } from './recommendation.service';
 import {
   GetRecommendationsQueryDto,
   RecommendedProductDto,
   SimilarProductDto,
 } from './dto';
+import { JwtAuthGuard, CurrentUser, CurrentUserData } from '@app/shared';
 
 @Controller('recommendations')
 export class RecommendationController {
   constructor(private readonly recommendationService: RecommendationService) {}
 
-  @Get('user/:userId')
+  @Get('user')
+  @UseGuards(JwtAuthGuard)
   async getUserRecommendations(
-    @Param('userId') userId: string,
+    @CurrentUser() user: CurrentUserData,
     @Query() query: GetRecommendationsQueryDto,
   ): Promise<RecommendedProductDto[]> {
     return this.recommendationService.getUserRecommendations(
-      userId,
+      user.userId,
       query.limit,
     );
   }

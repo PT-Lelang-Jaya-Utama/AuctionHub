@@ -339,9 +339,11 @@ Similarity relationships are automatically updated when auctions end.
 
 ### Get User Recommendations
 ```
-GET /api/recommendations/user/:userId?limit=10
+GET /api/recommendations/user?limit=10
 Authorization: Bearer <token>
 ```
+
+User is identified from the JWT token - no userId in URL needed.
 
 **Query Parameters:**
 - `limit` - Number of recommendations (default: 10, max: 50)

@@ -714,24 +714,21 @@ paths:
         '200':
           description: User's bids
 
-  /recommendations/user/{userId}:
+  /recommendations/user:
     get:
       operationId: getUserRecommendations
       tags: [Recommendations]
-      summary: Get personalized recommendations for user
+      summary: Get personalized recommendations for current user
       description: |
-        Returns products recommended for the user based on:
+        Returns products recommended for the authenticated user based on:
         - Categories they've bid on or viewed
         - Products similar to ones they've viewed
         - Recency of interactions
+        
+        User is identified from the JWT token.
       security:
         - bearerAuth: []
       parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
         - name: limit
           in: query
           schema:
@@ -756,6 +753,8 @@ paths:
                       type: string
                     score:
                       type: number
+        '401':
+          description: Unauthorized - JWT token required
 
   /recommendations/product/{productId}/similar:
     get:
