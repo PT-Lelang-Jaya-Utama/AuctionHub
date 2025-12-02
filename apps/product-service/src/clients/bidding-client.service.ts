@@ -72,23 +72,15 @@ export class BiddingClientService {
   }
 
   async getWinner(productId: string): Promise<Winner | null> {
-    try {
-      const response = await fetch(
-        `${this.baseUrl}/bids/product/${productId}/winner`,
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.data || null;
-    } catch (error) {
-      this.logger.error(`Failed to fetch winner: ${error}`);
-      throw new ServiceUnavailableError('Bidding Service');
+    // Use highest bid endpoint - winner is the highest bidder when auction ends
+    const highestBid = await this.getHighestBid(productId);
+    if (!highestBid) {
+      return null;
     }
+    return {
+      userId: highestBid.userId,
+      amount: highestBid.amount,
+      bidId: highestBid.bidId,
+    };
   }
 }
