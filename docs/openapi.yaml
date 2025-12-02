@@ -571,21 +571,6 @@ paths:
         '200':
           description: Products list
 
-  /products/category/{category}:
-    get:
-      operationId: getProductsByCategory
-      tags: [Products]
-      summary: Get products by category
-      parameters:
-        - name: category
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Products list
-
   /products/{id}/auction-status:
     get:
       operationId: getAuctionStatus

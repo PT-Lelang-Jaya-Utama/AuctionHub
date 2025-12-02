@@ -210,11 +210,6 @@ GET /api/products?page=1&limit=10&category=watches&status=active
 GET /api/products/seller/:sellerId
 ```
 
-### Get Products by Category
-```
-GET /api/products/category/:category
-```
-
 ### Get Auction Status
 ```
 GET /api/products/:id/auction-status

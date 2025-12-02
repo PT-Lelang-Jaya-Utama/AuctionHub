@@ -109,24 +109,6 @@ export class ProductController {
     );
   }
 
-  @Get('category/:category')
-  async getCategoryProducts(
-    @Param('category') category: string,
-    @Query() paginationDto: ProductFiltersDto,
-  ) {
-    const { page, limit } = paginationDto;
-    const result = await this.productService.findByCategory(
-      category,
-      { page: page || 1, limit: limit || 10 },
-    );
-    return new PaginatedResponse(
-      result.data.map(p => p.toObject()),
-      result.page,
-      result.limit,
-      result.total,
-    );
-  }
-
   @Get(':id/auction-status')
   async getAuctionStatus(@Param('id') id: string) {
     const auctionStatus = await this.productService.getAuctionStatus(id);
