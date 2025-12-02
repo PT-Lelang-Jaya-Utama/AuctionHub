@@ -59,18 +59,6 @@ export class UserController {
     return ApiResponse.success(null, 'User deleted successfully');
   }
 
-  @Get('seller/:sellerId/products')
-  async getSellerProducts(@Param('sellerId') sellerId: string) {
-    const products = await this.userService.getSellerProducts(sellerId);
-    return ApiResponse.success(products);
-  }
-
-  @Get('buyer/:buyerId/bids')
-  async getBuyerBids(@Param('buyerId') buyerId: string) {
-    const bids = await this.userService.getBuyerBids(buyerId);
-    return ApiResponse.success(bids);
-  }
-
   @Post('validate-credentials')
   @HttpCode(HttpStatus.OK)
   async validateCredentials(

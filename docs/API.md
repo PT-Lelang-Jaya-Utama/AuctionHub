@@ -99,28 +99,6 @@ Authorization: Bearer <token>
 
 ## User Service (`/api/users`)
 
-### Create User
-```
-POST /api/users
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "role": "seller",
-  "profile": {
-    "name": "John Doe",
-    "phone": "+1234567890",
-    "address": {
-      "street": "123 Main St",
-      "city": "Jakarta",
-      "province": "DKI Jakarta",
-      "postalCode": "12345"
-    }
-  }
-}
-```
-
 ### Get User by ID
 ```
 GET /api/users/:id
@@ -143,18 +121,6 @@ Content-Type: application/json
 ### Delete User (Soft Delete)
 ```
 DELETE /api/users/:id
-Authorization: Bearer <token>
-```
-
-### Get Seller's Products
-```
-GET /api/users/seller/:sellerId/products
-Authorization: Bearer <token>
-```
-
-### Get Buyer's Bids
-```
-GET /api/users/buyer/:buyerId/bids
 Authorization: Bearer <token>
 ```
 

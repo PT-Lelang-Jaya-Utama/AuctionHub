@@ -391,25 +391,6 @@ paths:
         '401':
           description: Invalid or expired session
 
-  /users:
-    post:
-      operationId: createUser
-      tags: [Users]
-      summary: Create a new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateUserRequest'
-      responses:
-        '201':
-          description: User created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-
   /users/{id}:
     get:
       operationId: getUserById
@@ -470,40 +451,6 @@ paths:
       responses:
         '200':
           description: User deleted
-
-  /users/seller/{sellerId}/products:
-    get:
-      operationId: getSellerProducts
-      tags: [Users]
-      summary: Get seller's products
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: sellerId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Products list
-
-  /users/buyer/{buyerId}/bids:
-    get:
-      operationId: getBuyerBids
-      tags: [Users]
-      summary: Get buyer's bids
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: buyerId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Bids list
 
   /products:
     get:

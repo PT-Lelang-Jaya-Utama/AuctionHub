@@ -3,10 +3,8 @@ import * as bcrypt from 'bcryptjs';
 import { UserRepository } from './repositories/user.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserDocument } from './schemas/user.schema';
-import { ConflictError, NotFoundError, ForbiddenError } from '@app/shared';
+import { ConflictError, NotFoundError } from '@app/shared';
 import { RabbitMQService, EXCHANGES, ROUTING_KEYS } from '@app/rabbitmq';
-import { ProductClientService, Product } from '../clients/product-client.service';
-import { BiddingClientService, Bid } from '../clients/bidding-client.service';
 
 @Injectable()
 export class UserService {
@@ -16,8 +14,6 @@ export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly rabbitMQService: RabbitMQService,
-    private readonly productClientService: ProductClientService,
-    private readonly biddingClientService: BiddingClientService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserDocument> {
@@ -193,21 +189,4 @@ export class UserService {
     }
   }
 
-  async getSellerProducts(sellerId: string): Promise<Product[]> {
-    const user = await this.findById(sellerId);
-    if (user.role !== 'seller') {
-      throw new ForbiddenError('User is not a seller');
-    }
-
-    return this.productClientService.getSellerProducts(sellerId);
-  }
-
-  async getBuyerBids(buyerId: string): Promise<Bid[]> {
-    const user = await this.findById(buyerId);
-    if (user.role !== 'buyer') {
-      throw new ForbiddenError('User is not a buyer');
-    }
-
-    return this.biddingClientService.getUserBids(buyerId);
-  }
 }
