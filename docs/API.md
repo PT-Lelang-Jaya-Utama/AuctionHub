@@ -23,6 +23,7 @@ POST /api/auth/register
 Content-Type: application/json
 
 {
+  "name": "John Doe",
   "email": "user@example.com",
   "password": "password123",
   "role": "buyer"  // or "seller"
@@ -37,7 +38,8 @@ Content-Type: application/json
     "userId": "...",
     "email": "user@example.com",
     "role": "buyer"
-  }
+  },
+  "message": "User registered successfully"
 }
 ```
 

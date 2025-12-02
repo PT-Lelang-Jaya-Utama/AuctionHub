@@ -38,12 +38,12 @@ export class UserClientService {
           role: payload.role,
           profile: {
             name: payload.name,
-            phone: '',
+            phone: '-',
             address: {
-              street: '',
-              city: '',
-              province: '',
-              postalCode: '',
+              street: '-',
+              city: '-',
+              province: '-',
+              postalCode: '-',
             },
           },
         }),
