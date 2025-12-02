@@ -1,12 +1,17 @@
-import { IsString, IsNumber, IsOptional, IsEnum, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, Min, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaginationDto } from '@app/shared';
-import { AuctionStatusType, AUCTION_STATUS } from '@app/shared';
+import {
+  PaginationDto,
+  AuctionStatusType,
+  AUCTION_STATUS,
+  PRODUCT_CATEGORY_VALUES,
+  ProductCategoryType,
+} from '@app/shared';
 
 export class ProductFiltersDto extends PaginationDto {
-  @IsString()
+  @IsIn(PRODUCT_CATEGORY_VALUES)
   @IsOptional()
-  category?: string;
+  category?: ProductCategoryType;
 
   @IsString()
   @IsOptional()

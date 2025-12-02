@@ -1,13 +1,15 @@
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsArray, 
-  IsEnum, 
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsEnum,
   IsObject,
   Min,
   IsNotEmpty,
+  IsIn,
 } from 'class-validator';
+import { PRODUCT_CATEGORY_VALUES, ProductCategoryType } from '@app/shared';
 
 export class CreateProductDto {
   // sellerId is extracted from JWT token, not from request body
@@ -20,9 +22,10 @@ export class CreateProductDto {
   @IsNotEmpty()
   description: string;
 
-  @IsString()
-  @IsNotEmpty()
-  category: string;
+  @IsIn(PRODUCT_CATEGORY_VALUES, {
+    message: `category must be one of: ${PRODUCT_CATEGORY_VALUES.join(', ')}`,
+  })
+  category: ProductCategoryType;
 
   @IsArray()
   @IsString({ each: true })

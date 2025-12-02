@@ -1,12 +1,14 @@
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsArray, 
-  IsEnum, 
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsEnum,
   IsObject,
   Min,
+  IsIn,
 } from 'class-validator';
+import { PRODUCT_CATEGORY_VALUES, ProductCategoryType } from '@app/shared';
 
 export class UpdateProductDto {
   @IsString()
@@ -17,9 +19,11 @@ export class UpdateProductDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
+  @IsIn(PRODUCT_CATEGORY_VALUES, {
+    message: `category must be one of: ${PRODUCT_CATEGORY_VALUES.join(', ')}`,
+  })
   @IsOptional()
-  category?: string;
+  category?: ProductCategoryType;
 
   @IsArray()
   @IsString({ each: true })

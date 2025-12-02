@@ -21,6 +21,7 @@ export * from './errors/app.errors';
 // Constants
 export * from './constants/roles.constants';
 export * from './constants/auction-status.constants';
+export * from './constants/category.constants';
 
 // Shared Module
 export * from './shared.module';
