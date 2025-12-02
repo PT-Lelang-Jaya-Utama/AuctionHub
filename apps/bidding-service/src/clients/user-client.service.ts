@@ -25,7 +25,8 @@ export class UserClientService {
 
   async getUser(userId: string): Promise<User | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/users/${userId}`);
+      // Use internal endpoint that doesn't require auth
+      const response = await fetch(`${this.baseUrl}/users/internal/${userId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
