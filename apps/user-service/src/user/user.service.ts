@@ -48,6 +48,7 @@ export class UserService {
         totalWins: 0,
       };
     }
+    
 
     const user = await this.userRepository.create(userData);
     await this.publishUserCreatedEvent(user);

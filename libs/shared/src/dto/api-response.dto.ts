@@ -11,11 +11,14 @@ export class ApiResponse<T> {
   }
 
   static success<T>(data: T, message?: string): ApiResponse<T> {
-    return new ApiResponse({
+    const response: Partial<ApiResponse<T>> = {
       success: true,
-      data,
       message,
-    });
+    };
+    if (data !== null && data !== undefined) {
+      response.data = data;
+    }
+    return new ApiResponse(response);
   }
 
   static error<T>(error: string, message?: string): ApiResponse<T> {
