@@ -193,19 +193,6 @@ export class UserService {
     }
   }
 
-  async getProfile(id: string): Promise<UserDocument['profile']> {
-    const user = await this.findById(id);
-    return user.profile;
-  }
-
-  async updateProfile(
-    id: string,
-    profileData: Partial<UserDocument['profile']>,
-  ): Promise<UserDocument['profile']> {
-    const user = await this.updateUser(id, { profile: profileData });
-    return user.profile;
-  }
-
   async getSellerProducts(sellerId: string): Promise<Product[]> {
     const user = await this.findById(sellerId);
     if (user.role !== 'seller') {
