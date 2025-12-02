@@ -21,16 +21,13 @@ export class UserService {
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserDocument> {
-    // Check email uniqueness
     const emailExists = await this.userRepository.existsByEmail(createUserDto.email);
     if (emailExists) {
       throw new ConflictError('Email already exists');
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(createUserDto.password, this.SALT_ROUNDS);
 
-    // Prepare user data with role-specific fields
     const userData: Partial<UserDocument> = {
       email: createUserDto.email,
       password: hashedPassword,
@@ -38,7 +35,6 @@ export class UserService {
       profile: createUserDto.profile,
     };
 
-    // Initialize role-specific fields
     if (createUserDto.role === 'seller') {
       userData.seller = {
         companyName: '',
@@ -53,12 +49,8 @@ export class UserService {
       };
     }
 
-
     const user = await this.userRepository.create(userData);
-
-    // Publish user.created event
     await this.publishUserCreatedEvent(user);
-
     this.logger.log(`User created: ${user._id}`);
     return user;
   }
@@ -76,7 +68,6 @@ export class UserService {
           createdAt: user.createdAt,
         },
       );
-      this.logger.debug(`Published user.created event for user: ${user._id}`);
     } catch (error) {
       this.logger.error(`Failed to publish user.created event: ${error}`);
     }
@@ -94,6 +85,20 @@ export class UserService {
     return this.userRepository.findByEmail(email);
   }
 
+  async validateCredentials(email: string, password: string): Promise<UserDocument | null> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      return null;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    return user;
+  }
+
   async updateUser(
     id: string,
     updateData: {
@@ -102,13 +107,11 @@ export class UserService {
       buyer?: Partial<UserDocument['buyer']>;
     },
   ): Promise<UserDocument> {
-    // First check if user exists
     const existingUser = await this.userRepository.findById(id);
     if (!existingUser) {
       throw new NotFoundError('User', id);
     }
 
-    // Build update object with nested fields
     const updateObj: Record<string, unknown> = {};
 
     if (updateData.profile) {
@@ -119,7 +122,6 @@ export class UserService {
       });
     }
 
-    // Only allow seller updates for sellers
     if (updateData.seller && existingUser.role === 'seller') {
       Object.entries(updateData.seller).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -128,7 +130,6 @@ export class UserService {
       });
     }
 
-    // Only allow buyer updates for buyers
     if (updateData.buyer && existingUser.role === 'buyer') {
       Object.entries(updateData.buyer).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -142,9 +143,7 @@ export class UserService {
       throw new NotFoundError('User', id);
     }
 
-    // Publish user.updated event
     await this.publishUserUpdatedEvent(user);
-
     this.logger.log(`User updated: ${user._id}`);
     return user;
   }
@@ -162,7 +161,6 @@ export class UserService {
           updatedAt: user.updatedAt,
         },
       );
-      this.logger.debug(`Published user.updated event for user: ${user._id}`);
     } catch (error) {
       this.logger.error(`Failed to publish user.updated event: ${error}`);
     }
@@ -174,9 +172,7 @@ export class UserService {
       throw new NotFoundError('User', id);
     }
 
-    // Publish user.deleted event
     await this.publishUserDeletedEvent(user);
-
     this.logger.log(`User soft deleted: ${user._id}`);
   }
 
@@ -191,7 +187,6 @@ export class UserService {
           deletedAt: user.deletedAt,
         },
       );
-      this.logger.debug(`Published user.deleted event for user: ${user._id}`);
     } catch (error) {
       this.logger.error(`Failed to publish user.deleted event: ${error}`);
     }
@@ -211,7 +206,6 @@ export class UserService {
   }
 
   async getSellerProducts(sellerId: string): Promise<Product[]> {
-    // Verify seller exists and has seller role
     const user = await this.findById(sellerId);
     if (user.role !== 'seller') {
       throw new ForbiddenError('User is not a seller');
@@ -221,7 +215,6 @@ export class UserService {
   }
 
   async getBuyerBids(buyerId: string): Promise<Bid[]> {
-    // Verify buyer exists and has buyer role
     const user = await this.findById(buyerId);
     if (user.role !== 'buyer') {
       throw new ForbiddenError('User is not a buyer');

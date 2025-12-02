@@ -85,4 +85,19 @@ export class UserController {
     const bids = await this.userService.getBuyerBids(buyerId);
     return ApiResponse.success(bids);
   }
+
+  @Post('validate-credentials')
+  @HttpCode(HttpStatus.OK)
+  async validateCredentials(
+    @Body() body: { email: string; password: string },
+  ) {
+    const user = await this.userService.validateCredentials(body.email, body.password);
+    if (!user) {
+      return ApiResponse.error('Invalid credentials');
+    }
+    
+    // Return user without password
+    const { password, ...userWithoutPassword } = user.toObject();
+    return ApiResponse.success(userWithoutPassword);
+  }
 }

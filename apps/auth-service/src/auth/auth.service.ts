@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
 import { 
   ISession, 
   UnauthorizedError, 
@@ -35,13 +34,10 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
-    // Hash password before sending to User Service
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    // Create user via User Service
+    // Create user via User Service (user-service handles password hashing)
     const user = await this.userClientService.createUser({
       email: dto.email,
-      password: hashedPassword,
+      password: dto.password,
       role: dto.role,
       name: dto.name,
     });
