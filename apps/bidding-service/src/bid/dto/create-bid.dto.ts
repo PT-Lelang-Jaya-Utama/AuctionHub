@@ -5,9 +5,7 @@ export class CreateBidDto {
   @IsString()
   productId: string;
 
-  @IsNotEmpty()
-  @IsString()
-  userId: string;
+  // userId is extracted from JWT token, not from request body
 
   @IsNotEmpty()
   @IsNumber()

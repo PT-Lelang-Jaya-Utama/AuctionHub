@@ -24,7 +24,7 @@ export class BidService {
    * - Updates previous bids to outbid
    * - Publishes bid.placed event
    */
-  async placeBid(createBidDto: CreateBidDto): Promise<IBid> {
+  async placeBid(createBidDto: CreateBidDto & { userId: string }): Promise<IBid> {
     const { productId, userId, amount } = createBidDto;
 
     // Validate auction is active and get product details

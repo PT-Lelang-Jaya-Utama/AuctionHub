@@ -183,10 +183,8 @@ components:
 
     CreateProductRequest:
       type: object
-      required: [sellerId, title, description, category, startingPrice, condition]
+      required: [title, description, category, startingPrice, condition]
       properties:
-        sellerId:
-          type: string
         title:
           type: string
           example: Vintage Watch
@@ -278,11 +276,9 @@ components:
 
     CreateBidRequest:
       type: object
-      required: [productId, userId, amount]
+      required: [productId, amount]
       properties:
         productId:
-          type: string
-        userId:
           type: string
         amount:
           type: number

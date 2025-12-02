@@ -27,7 +27,7 @@ export class ProductService {
     private readonly biddingClientService: BiddingClientService,
   ) {}
 
-  async createProduct(createProductDto: CreateProductDto): Promise<ProductDocument> {
+  async createProduct(createProductDto: CreateProductDto & { sellerId: string }): Promise<ProductDocument> {
     // Validate seller exists and has seller role
     const isValidSeller = await this.userClientService.validateSeller(createProductDto.sellerId);
     if (!isValidSeller) {

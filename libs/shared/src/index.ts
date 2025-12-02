@@ -10,6 +10,10 @@ export * from './interfaces/session.interface';
 
 // Decorators
 export * from './decorators/validation.decorators';
+export * from './decorators/current-user.decorator';
+
+// Guards
+export * from './guards/jwt-auth.guard';
 
 // Errors
 export * from './errors/app.errors';

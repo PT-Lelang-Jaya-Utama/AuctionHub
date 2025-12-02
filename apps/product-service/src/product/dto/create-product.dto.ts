@@ -10,9 +10,7 @@ import {
 } from 'class-validator';
 
 export class CreateProductDto {
-  @IsString()
-  @IsNotEmpty()
-  sellerId: string;
+  // sellerId is extracted from JWT token, not from request body
 
   @IsString()
   @IsNotEmpty()

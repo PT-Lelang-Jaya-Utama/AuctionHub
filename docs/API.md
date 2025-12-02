@@ -135,7 +135,6 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "sellerId": "seller-user-id",
   "title": "Vintage Watch",
   "description": "A beautiful vintage watch from 1960s",
   "category": "watches",
@@ -148,6 +147,8 @@ Content-Type: application/json
     "year": 1965
   }
 }
+```
+Note: `sellerId` is automatically extracted from the JWT token.
 ```
 
 **Response (201):**
@@ -248,10 +249,10 @@ Content-Type: application/json
 
 {
   "productId": "product-id",
-  "userId": "buyer-user-id",
   "amount": 150
 }
 ```
+Note: `userId` is automatically extracted from the JWT token.
 
 **Response (201):**
 ```json
