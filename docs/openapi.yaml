@@ -52,6 +52,7 @@ components:
         - email
         - password
         - role
+        - name
       properties:
         email:
           type: string
@@ -65,6 +66,9 @@ components:
           type: string
           enum: [buyer, seller]
           example: buyer
+        name:
+          type: string
+          example: John Doe
 
     LoginRequest:
       type: object
