@@ -1,0 +1,461 @@
+networks:
+  eauction-network:
+    driver: bridge
+
+volumes:
+  redis-master-data:
+  redis-slave-data:
+  mongodb-primary-data:
+  mongodb-secondary1-data:
+  mongodb-secondary2-data:
+  neo4j-data:
+  kong-database-data:
+  rabbitmq-data:
+
+services:
+  # ============================================
+  # Redis Master-Slave with Sentinel
+  # ============================================
+  redis-master:
+    image: redis:7-alpine
+    container_name: redis-master
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-master-data:/data
+    networks:
+      - eauction-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-slave:
+    image: redis:7-alpine
+    container_name: redis-slave
+    command: redis-server --appendonly yes --slaveof redis-master 6379
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-slave-data:/data
+    networks:
+      - eauction-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: redis-sentinel
+    command: redis-sentinel /etc/redis/sentinel.conf
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./config/redis/sentinel.conf:/etc/redis/sentinel.conf
+    networks:
+      - eauction-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-slave:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================
+  # MongoDB Replica Set
+  # ============================================
+  mongodb-primary:
+    image: mongo:6
+    container_name: mongodb-primary
+    command: mongod --replSet rs0 --bind_ip_all
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-primary-data:/data/db
+      - ./scripts/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+    networks:
+      - eauction-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb-secondary1:
+    image: mongo:6
+    container_name: mongodb-secondary1
+    command: mongod --replSet rs0 --bind_ip_all
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb-secondary1-data:/data/db
+    networks:
+      - eauction-network
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb-secondary2:
+    image: mongo:6
+    container_name: mongodb-secondary2
+    command: mongod --replSet rs0 --bind_ip_all
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongodb-secondary2-data:/data/db
+    networks:
+      - eauction-network
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Neo4j Single Instance
+  # ============================================
+  neo4j:
+    image: neo4j:5
+    container_name: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+    networks:
+      - eauction-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # RabbitMQ Message Broker
+  # ============================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - eauction-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Kong API Gateway
+  # ============================================
+  kong-database:
+    image: postgres:15-alpine
+    container_name: kong-database
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_DB=kong
+      - POSTGRES_PASSWORD=kongpass
+    volumes:
+      - kong-database-data:/var/lib/postgresql/data
+    networks:
+      - eauction-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kong-migrations:
+    image: kong:3.4
+    container_name: kong-migrations
+    command: kong migrations bootstrap
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-database
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kongpass
+    networks:
+      - eauction-network
+    depends_on:
+      kong-database:
+        condition: service_healthy
+    restart: on-failure
+
+  kong:
+    image: kong:3.4
+    container_name: kong
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-database
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kongpass
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_ADMIN_GUI_URL=http://localhost:8002
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+      - "8443:8443"
+    networks:
+      - eauction-network
+    depends_on:
+      kong-database:
+        condition: service_healthy
+      kong-migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Microservices
+  # ============================================
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/auth-service/Dockerfile
+    container_name: auth-service
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_SENTINEL_HOSTS=redis-sentinel:26379
+      - REDIS_MASTER_NAME=mymaster
+      - REDIS_HOST=redis-master
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-24h}
+      - REFRESH_TOKEN_EXPIRATION=${REFRESH_TOKEN_EXPIRATION:-7d}
+      - USER_SERVICE_URL=http://user-service:3001
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    networks:
+      - eauction-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-sentinel:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  user-service:
+    build:
+      context: .
+      dockerfile: apps/user-service/Dockerfile
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/eauction?replicaSet=rs0
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - BIDDING_SERVICE_URL=http://bidding-service:3003
+    networks:
+      - eauction-network
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+      mongodb-secondary1:
+        condition: service_healthy
+      mongodb-secondary2:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  product-service:
+    build:
+      context: .
+      dockerfile: apps/product-service/Dockerfile
+    container_name: product-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - MONGODB_URI=mongodb://mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/eauction?replicaSet=rs0
+      - USER_SERVICE_URL=http://user-service:3001
+      - BIDDING_SERVICE_URL=http://bidding-service:3003
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    networks:
+      - eauction-network
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+      mongodb-secondary1:
+        condition: service_healthy
+      mongodb-secondary2:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  bidding-service:
+    build:
+      context: .
+      dockerfile: apps/bidding-service/Dockerfile
+    container_name: bidding-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - REDIS_SENTINEL_HOSTS=redis-sentinel:26379
+      - REDIS_MASTER_NAME=mymaster
+      - REDIS_HOST=redis-master
+      - REDIS_PORT=6379
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - USER_SERVICE_URL=http://user-service:3001
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    networks:
+      - eauction-network
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-sentinel:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  recommendation-service:
+    build:
+      context: .
+      dockerfile: apps/recommendation-service/Dockerfile
+    container_name: recommendation-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    networks:
+      - eauction-network
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  # ============================================
+  # Initialization Services
+  # ============================================
+  kong-init:
+    image: curlimages/curl:latest
+    container_name: kong-init
+    volumes:
+      - ./scripts/kong-init.sh:/kong-init.sh:ro
+    entrypoint: ["/bin/sh", "/kong-init.sh"]
+    networks:
+      - eauction-network
+    depends_on:
+      kong:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      bidding-service:
+        condition: service_healthy
+      recommendation-service:
+        condition: service_healthy
+    restart: "no"
+
+
+  rabbitmq-init:
+    image: curlimages/curl:latest
+    container_name: rabbitmq-init
+    volumes:
+      - ./scripts/rabbitmq-init.sh:/rabbitmq-init.sh:ro
+    entrypoint: ["/bin/sh", "/rabbitmq-init.sh"]
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_MANAGEMENT_PORT=15672
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - eauction-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: "no"
