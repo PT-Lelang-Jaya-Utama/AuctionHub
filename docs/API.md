@@ -310,11 +310,6 @@ GET /api/bids/user/:userId
 Authorization: Bearer <token>
 ```
 
-### Get Auction Winner
-```
-GET /api/bids/product/:productId/winner
-```
-
 ---
 
 ## Recommendation Service (`/api/recommendations`)

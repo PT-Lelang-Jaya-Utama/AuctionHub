@@ -59,10 +59,4 @@ export class BidController {
     const bids = await this.bidService.getUserBids(userId);
     return ApiResponse.success(bids);
   }
-
-  @Get('product/:productId/winner')
-  async getWinner(@Param('productId') productId: string) {
-    const winner = await this.bidService.getWinner(productId);
-    return ApiResponse.success(winner);
-  }
 }

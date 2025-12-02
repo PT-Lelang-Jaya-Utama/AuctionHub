@@ -691,23 +691,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Bid'
 
-  /bids/product/{productId}/winner:
-    get:
-      operationId: getAuctionWinner
-      tags: [Bids]
-      summary: Get auction winner
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Winner bid
-        '400':
-          description: Auction not ended
-
   /bids/user/{userId}:
     get:
       operationId: getUserBids
