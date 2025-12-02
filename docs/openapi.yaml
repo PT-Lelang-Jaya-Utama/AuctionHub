@@ -1,0 +1,857 @@
+openapi: 3.0.3
+info:
+  title: E-Auction Platform API
+  description: A microservices-based e-auction platform with polyglot persistence
+  version: 1.0.0
+  contact:
+    name: E-Auction Support
+
+servers:
+  - url: http://localhost:8000/api
+    description: Kong API Gateway (Development)
+
+tags:
+  - name: Auth
+    description: Authentication and session management
+  - name: Users
+    description: User management
+  - name: Products
+    description: Product and auction management
+  - name: Bids
+    description: Bidding operations
+  - name: Recommendations
+    description: Product recommendations
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            statusCode:
+              type: integer
+            message:
+              type: string
+            error:
+              type: string
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 6
+          example: password123
+        role:
+          type: string
+          enum: [buyer, seller]
+          example: buyer
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            expiresIn:
+              type: integer
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        postalCode:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        avatar:
+          type: string
+
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [buyer, seller]
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Auction:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, active, ended, cancelled]
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        winnerId:
+          type: string
+        totalBids:
+          type: integer
+
+    CreateProductRequest:
+      type: object
+      required:
+        - sellerId
+        - title
+        - description
+        - category
+        - startingPrice
+        - condition
+      properties:
+        sellerId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        startingPrice:
+          type: number
+        buyNowPrice:
+          type: number
+        condition:
+          type: string
+          enum: [new, used]
+        specifications:
+          type: object
+          additionalProperties: true
+
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+        sellerId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+        startingPrice:
+          type: number
+        currentPrice:
+          type: number
+        buyNowPrice:
+          type: number
+        condition:
+          type: string
+        specifications:
+          type: object
+        auction:
+          $ref: '#/components/schemas/Auction'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StartAuctionRequest:
+      type: object
+      required:
+        - startTime
+        - endTime
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+
+    CreateBidRequest:
+      type: object
+      required:
+        - productId
+        - userId
+        - amount
+      properties:
+        productId:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: number
+
+    Bid:
+      type: object
+      properties:
+        bidId:
+          type: string
+        productId:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+          enum: [active, outbid, winner]
+        timestamp:
+          type: integer
+
+    Recommendation:
+      type: object
+      properties:
+        productId:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        score:
+          type: number
+
+paths:
+  # Auth endpoints
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+        '409':
+          description: Email already exists
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /auth/verify:
+    get:
+      tags: [Auth]
+      summary: Verify session
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session valid
+        '401':
+          description: Invalid or expired session
+
+  # User endpoints
+  /users:
+    post:
+      tags: [Users]
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+
+    put:
+      tags: [Users]
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: User updated
+
+    delete:
+      tags: [Users]
+      summary: Delete user (soft delete)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deleted
+
+  /users/{id}/profile:
+    get:
+      tags: [Users]
+      summary: Get user profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile found
+
+    put:
+      tags: [Users]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      responses:
+        '200':
+          description: Profile updated
+
+  /users/seller/{sellerId}/products:
+    get:
+      tags: [Users]
+      summary: Get seller's products
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products list
+
+  /users/buyer/{buyerId}/bids:
+    get:
+      tags: [Users]
+      summary: Get buyer's bids
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: buyerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bids list
+
+  # Product endpoints
+  /products:
+    get:
+      tags: [Products]
+      summary: List products with pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, ended, cancelled]
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Products list
+
+    post:
+      tags: [Products]
+      summary: Create a new product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+    put:
+      tags: [Products]
+      summary: Update product (draft only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Product updated
+
+    delete:
+      tags: [Products]
+      summary: Delete product (soft delete)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product deleted
+
+  /products/seller/{sellerId}:
+    get:
+      tags: [Products]
+      summary: Get products by seller
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products list
+
+  /products/category/{category}:
+    get:
+      tags: [Products]
+      summary: Get products by category
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products list
+
+  /products/{id}/auction-status:
+    get:
+      tags: [Products]
+      summary: Get auction status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Auction status
+
+  /products/{id}/start-auction:
+    put:
+      tags: [Products]
+      summary: Start auction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartAuctionRequest'
+      responses:
+        '200':
+          description: Auction started
+
+  /products/{id}/end-auction:
+    put:
+      tags: [Products]
+      summary: End auction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Auction ended
+
+  # Bid endpoints
+  /bids:
+    post:
+      tags: [Bids]
+      summary: Place a bid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBidRequest'
+      responses:
+        '201':
+          description: Bid placed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+        '400':
+          description: Invalid bid amount
+        '403':
+          description: Seller cannot bid
+
+  /bids/product/{productId}:
+    get:
+      tags: [Bids]
+      summary: Get bids for a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bids list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bid'
+
+  /bids/product/{productId}/highest:
+    get:
+      tags: [Bids]
+      summary: Get highest bid for a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Highest bid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bid'
+
+  /bids/user/{userId}:
+    get:
+      tags: [Bids]
+      summary: Get user's bids
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User's bids
+
+  /bids/product/{productId}/winner:
+    get:
+      tags: [Bids]
+      summary: Get auction winner
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Winner bid
+        '400':
+          description: Auction not ended
+
+  # Recommendation endpoints
+  /recommendations/user/{userId}:
+    get:
+      tags: [Recommendations]
+      summary: Get recommendations for user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+
+  /recommendations/product/{productId}/similar:
+    get:
+      tags: [Recommendations]
+      summary: Get similar products
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Similar products
+
+  /recommendations/train:
+    post:
+      tags: [Recommendations]
+      summary: Train recommendation model
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Training started
