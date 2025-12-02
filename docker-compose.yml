@@ -88,7 +88,6 @@ services:
       - "27017:27017"
     volumes:
       - mongodb-primary-data:/data/db
-      - ./scripts/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
     networks:
       - eauction-network
     restart: unless-stopped
@@ -310,12 +309,8 @@ services:
     networks:
       - eauction-network
     depends_on:
-      mongodb-primary:
-        condition: service_healthy
-      mongodb-secondary1:
-        condition: service_healthy
-      mongodb-secondary2:
-        condition: service_healthy
+      mongodb-init:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
@@ -343,12 +338,8 @@ services:
     networks:
       - eauction-network
     depends_on:
-      mongodb-primary:
-        condition: service_healthy
-      mongodb-secondary1:
-        condition: service_healthy
-      mongodb-secondary2:
-        condition: service_healthy
+      mongodb-init:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
@@ -464,5 +455,22 @@ services:
       - eauction-network
     depends_on:
       rabbitmq:
+        condition: service_healthy
+    restart: "no"
+
+  mongodb-init:
+    image: mongo:6
+    container_name: mongodb-init
+    volumes:
+      - ./scripts/mongo-init.sh:/mongo-init.sh:ro
+    entrypoint: ["/bin/bash", "/mongo-init.sh"]
+    networks:
+      - eauction-network
+    depends_on:
+      mongodb-primary:
+        condition: service_healthy
+      mongodb-secondary1:
+        condition: service_healthy
+      mongodb-secondary2:
         condition: service_healthy
     restart: "no"

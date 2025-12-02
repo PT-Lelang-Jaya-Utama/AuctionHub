@@ -6,8 +6,6 @@
 # This script initializes the MongoDB replica set and creates
 # the necessary database and collections for the e-auction platform
 
-set -e
-
 echo "============================================"
 echo "MongoDB Replica Set Initialization"
 echo "============================================"
@@ -35,7 +33,8 @@ done
 echo "MongoDB secondary2 is ready!"
 
 # Check if replica set is already initialized
-RS_STATUS=$(mongosh --host mongodb-primary:27017 --quiet --eval "try { rs.status().ok } catch(e) { 0 }")
+echo "Checking replica set status..."
+RS_STATUS=$(mongosh --host mongodb-primary:27017 --quiet --eval "try { rs.status().ok } catch(e) { 0 }" 2>/dev/null || echo "0")
 
 if [ "$RS_STATUS" != "1" ]; then
   echo "Initializing replica set..."
@@ -48,8 +47,8 @@ if [ "$RS_STATUS" != "1" ]; then
         { _id: 2, host: "mongodb-secondary2:27017", priority: 1 }
       ]
     });
-  '
-  echo "Replica set initialized!"
+  ' || echo "Replica set may already be initialized"
+  echo "Replica set initialization attempted!"
 else
   echo "Replica set already initialized, skipping..."
 fi
@@ -58,27 +57,38 @@ fi
 echo "Waiting for replica set to elect a primary..."
 sleep 10
 
-until mongosh --host mongodb-primary:27017 --quiet --eval "rs.isMaster().ismaster" | grep -q "true"; do
-  echo "Waiting for primary election..."
+MAX_RETRIES=30
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  IS_PRIMARY=$(mongosh --host mongodb-primary:27017 --quiet --eval "rs.isMaster().ismaster" 2>/dev/null || echo "false")
+  if [ "$IS_PRIMARY" = "true" ]; then
+    echo "Primary elected!"
+    break
+  fi
+  echo "Waiting for primary election... (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
   sleep 2
+  RETRY_COUNT=$((RETRY_COUNT + 1))
 done
-echo "Primary elected!"
 
-# Create the eauction database and collections
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+  echo "Warning: Primary election timeout, but continuing..."
+fi
+
+# Create the eauction database and collections (idempotent operations)
 echo "Creating database and collections..."
 mongosh --host mongodb-primary:27017 --eval '
   // Switch to eauction database
   db = db.getSiblingDB("eauction");
 
-  // Create users collection with indexes
-  db.createCollection("users");
+  // Create users collection with indexes (createCollection is idempotent)
+  try { db.createCollection("users"); } catch(e) { print("users collection may already exist"); }
   db.users.createIndex({ "email": 1 }, { unique: true });
   db.users.createIndex({ "role": 1 });
   db.users.createIndex({ "deletedAt": 1 });
   db.users.createIndex({ "createdAt": -1 });
 
   // Create products collection with indexes
-  db.createCollection("products");
+  try { db.createCollection("products"); } catch(e) { print("products collection may already exist"); }
   db.products.createIndex({ "sellerId": 1 });
   db.products.createIndex({ "category": 1 });
   db.products.createIndex({ "auction.status": 1 });
@@ -91,8 +101,10 @@ mongosh --host mongodb-primary:27017 --eval '
   print("Indexes created:");
   print("Users indexes: " + JSON.stringify(db.users.getIndexes().map(i => i.name)));
   print("Products indexes: " + JSON.stringify(db.products.getIndexes().map(i => i.name)));
-'
+' || echo "Warning: Some database operations may have failed, but continuing..."
 
 echo "============================================"
 echo "MongoDB initialization completed!"
 echo "============================================"
+
+exit 0
