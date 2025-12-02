@@ -13,7 +13,7 @@ RUN npm ci --only=production=false
 COPY . .
 
 # Build the application
-RUN npm run build product-service
+RUN node node_modules/@nestjs/cli/bin/nest.js build product-service
 
 # Production stage
 FROM node:18-alpine AS production
