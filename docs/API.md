@@ -139,24 +139,6 @@ DELETE /api/users/:id
 Authorization: Bearer <token>
 ```
 
-### Get User Profile
-```
-GET /api/users/:id/profile
-Authorization: Bearer <token>
-```
-
-### Update User Profile
-```
-PUT /api/users/:id/profile
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "New Name",
-  "phone": "+0987654321"
-}
-```
-
 ### Get Seller's Products
 ```
 GET /api/users/seller/:sellerId/products

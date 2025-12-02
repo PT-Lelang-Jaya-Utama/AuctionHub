@@ -457,42 +457,6 @@ paths:
         '200':
           description: User deleted
 
-  /users/{id}/profile:
-    get:
-      tags: [Users]
-      summary: Get user profile
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Profile found
-
-    put:
-      tags: [Users]
-      summary: Update user profile
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserProfile'
-      responses:
-        '200':
-          description: Profile updated
-
   /users/seller/{sellerId}/products:
     get:
       tags: [Users]

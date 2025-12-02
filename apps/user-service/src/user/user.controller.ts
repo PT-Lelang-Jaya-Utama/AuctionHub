@@ -59,21 +59,6 @@ export class UserController {
     return ApiResponse.success(null, 'User deleted successfully');
   }
 
-  @Get(':id/profile')
-  async getProfile(@Param('id') id: string) {
-    const profile = await this.userService.getProfile(id);
-    return ApiResponse.success(profile);
-  }
-
-  @Put(':id/profile')
-  async updateProfile(
-    @Param('id') id: string,
-    @Body() profileDto: UpdateUserDto['profile'],
-  ) {
-    const profile = await this.userService.updateProfile(id, profileDto || {});
-    return ApiResponse.success(profile, 'Profile updated successfully');
-  }
-
   @Get('seller/:sellerId/products')
   async getSellerProducts(@Param('sellerId') sellerId: string) {
     const products = await this.userService.getSellerProducts(sellerId);
