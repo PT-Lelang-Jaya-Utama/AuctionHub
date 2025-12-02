@@ -91,45 +91,42 @@ export class SessionRepository {
       expiresAt: now + this.refreshTokenTTL * 1000,
     };
 
-    const key = `refresh:${userId}`;
-    await this.redis.setex(key, this.refreshTokenTTL, JSON.stringify(refreshToken));
+    // Store by token so we can look up userId from token
+    const key = `refresh:${token}`;
+    await this.redis.setex(key, this.refreshTokenTTL, JSON.stringify({ userId, ...refreshToken }));
 
     return { token, refreshToken };
   }
 
-  async getRefreshToken(userId: string): Promise<IRefreshToken | null> {
-    const key = `refresh:${userId}`;
+  async getRefreshTokenData(token: string): Promise<{ userId: string; token: string; expiresAt: number } | null> {
+    const key = `refresh:${token}`;
     const data = await this.redis.get(key);
 
     if (!data) {
       return null;
     }
 
-    return JSON.parse(data) as IRefreshToken;
+    return JSON.parse(data);
   }
 
-  async deleteRefreshToken(userId: string): Promise<boolean> {
-    const key = `refresh:${userId}`;
+  async deleteRefreshToken(token: string): Promise<boolean> {
+    const key = `refresh:${token}`;
     const result = await this.redis.del(key);
     return result > 0;
   }
 
-  async validateRefreshToken(userId: string, token: string): Promise<boolean> {
-    const storedToken = await this.getRefreshToken(userId);
+  async validateRefreshToken(token: string): Promise<{ valid: boolean; userId?: string }> {
+    const storedData = await this.getRefreshTokenData(token);
     
-    if (!storedToken) {
-      return false;
+    if (!storedData) {
+      return { valid: false };
     }
 
-    if (storedToken.token !== token) {
-      return false;
+    if (Date.now() > storedData.expiresAt) {
+      await this.deleteRefreshToken(token);
+      return { valid: false };
     }
 
-    if (Date.now() > storedToken.expiresAt) {
-      await this.deleteRefreshToken(userId);
-      return false;
-    }
-
-    return true;
+    return { valid: true, userId: storedData.userId };
   }
 }

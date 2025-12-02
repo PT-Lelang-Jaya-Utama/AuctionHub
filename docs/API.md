@@ -85,9 +85,10 @@ POST /api/auth/refresh-token
 Content-Type: application/json
 
 {
-  "refreshToken": "..."
+  "refreshToken": "your-refresh-token-here"
 }
 ```
+Note: `userId` is no longer required - it's extracted from the refresh token.
 
 ### Verify Session
 ```

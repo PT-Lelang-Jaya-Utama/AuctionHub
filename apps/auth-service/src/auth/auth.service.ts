@@ -117,21 +117,20 @@ export class AuthService {
   }
 
   async refreshToken(dto: RefreshTokenDto): Promise<AuthResponse> {
-    // Validate refresh token
-    const isValid = await this.sessionRepository.validateRefreshToken(
-      dto.userId,
+    // Validate refresh token and get userId
+    const { valid, userId } = await this.sessionRepository.validateRefreshToken(
       dto.refreshToken,
     );
 
-    if (!isValid) {
+    if (!valid || !userId) {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
     // Get user info
-    const user = await this.userClientService.getUserById(dto.userId);
+    const user = await this.userClientService.getUserById(userId);
 
     // Delete old refresh token
-    await this.sessionRepository.deleteRefreshToken(dto.userId);
+    await this.sessionRepository.deleteRefreshToken(dto.refreshToken);
 
     // Create new session
     const { sessionId, session } = await this.sessionRepository.createSession(
