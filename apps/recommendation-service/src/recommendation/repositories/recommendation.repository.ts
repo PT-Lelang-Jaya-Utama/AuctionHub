@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
-import { Driver, Session } from 'neo4j-driver';
+import { Driver, Session, Integer } from 'neo4j-driver';
 import { NEO4J_DRIVER } from '../../neo4j';
 import {
   UserNode,
@@ -7,6 +7,14 @@ import {
   RecommendedProduct,
   SimilarProduct,
 } from '../interfaces';
+
+// Helper to convert Neo4j values to JS numbers
+const toNumber = (value: unknown): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (Integer.isInteger(value)) return (value as Integer).toNumber();
+  return Number(value);
+};
 
 // Scoring weights for similarity calculation
 const SCORING_WEIGHTS = {
@@ -263,7 +271,7 @@ export class RecommendationRepository implements OnModuleInit {
         productId: record.get('productId'),
         category: record.get('category'),
         title: record.get('title'),
-        score: record.get('score').toNumber(),
+        score: toNumber(record.get('score')),
       }));
     } finally {
       await session.close();
@@ -323,7 +331,7 @@ export class RecommendationRepository implements OnModuleInit {
         productId: record.get('productId'),
         category: record.get('category'),
         title: record.get('title'),
-        similarityScore: record.get('similarityScore').toNumber(),
+        similarityScore: toNumber(record.get('similarityScore')),
       }));
     } finally {
       await session.close();
@@ -376,7 +384,7 @@ export class RecommendationRepository implements OnModuleInit {
         { productId },
       );
 
-      const count = result.records[0]?.get('relationshipsCreated')?.toNumber() || 0;
+      const count = toNumber(result.records[0]?.get('relationshipsCreated'));
       this.logger.log(`Updated ${count} SIMILAR_TO relationships for product: ${productId}`);
       return count;
     } finally {
