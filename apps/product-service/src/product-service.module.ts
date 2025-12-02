@@ -11,7 +11,7 @@ import { ProductModule } from './product';
       isGlobal: true,
     }),
     DatabaseModule,
-    RabbitMQModule,
+    RabbitMQModule.forRootAsync(),
     HealthModule,
     ProductModule,
   ],

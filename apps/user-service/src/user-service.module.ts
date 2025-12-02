@@ -11,7 +11,7 @@ import { HealthModule } from './health';
       isGlobal: true,
     }),
     DatabaseModule,
-    RabbitMQModule,
+    RabbitMQModule.forRootAsync(),
     UserModule,
     HealthModule,
   ],

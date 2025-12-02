@@ -12,7 +12,7 @@ import { RabbitMQModule } from '@app/rabbitmq';
       isGlobal: true,
     }),
     RedisModule,
-    RabbitMQModule,
+    RabbitMQModule.forRootAsync(),
     BiddingHealthModule,
     ClientsModule,
     BidModule,

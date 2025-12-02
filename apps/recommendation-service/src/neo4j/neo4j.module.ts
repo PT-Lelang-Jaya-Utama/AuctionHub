@@ -1,4 +1,4 @@
-import { Module, Global, OnModuleDestroy } from '@nestjs/common';
+import { Module, Global, OnModuleDestroy, Inject } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import neo4j, { Driver } from 'neo4j-driver';
 
@@ -31,7 +31,7 @@ export const NEO4J_DRIVER = 'NEO4J_DRIVER';
   exports: [NEO4J_DRIVER],
 })
 export class Neo4jModule implements OnModuleDestroy {
-  constructor(private readonly driver: Driver) {}
+  constructor(@Inject(NEO4J_DRIVER) private readonly driver: Driver) {}
 
   async onModuleDestroy() {
     if (this.driver) {

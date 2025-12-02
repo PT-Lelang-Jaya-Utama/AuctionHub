@@ -7,6 +7,7 @@ export type ProductDocument = HydratedDocument<Product>;
 @Schema({ _id: false })
 export class Auction {
   @Prop({ 
+    type: String,
     required: true, 
     enum: Object.values(AUCTION_STATUS),
     default: AUCTION_STATUS.DRAFT,
@@ -55,7 +56,7 @@ export class Product extends Document {
   @Prop({ min: 0 })
   buyNowPrice?: number;
 
-  @Prop({ required: true, enum: ['new', 'used'] })
+  @Prop({ type: String, required: true, enum: ['new', 'used'] })
   condition: 'new' | 'used';
 
   @Prop({ type: Object, default: {} })
