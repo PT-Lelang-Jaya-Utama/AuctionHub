@@ -46,21 +46,17 @@ create_route() {
   local service=$1
   local name=$2
   local path=$3
-  echo "Creating/updating route: ${name} (${path}) -> ${service}"
+  local strip=${4:-true}
+  echo "Creating/updating route: ${name} (${path}) -> ${service} (strip_path=${strip})"
   
-  # Check if route exists
-  if curl -s "${KONG_ADMIN_URL}/routes/${name}" | grep -q '"id"'; then
-    # Update existing route
-    curl -s -X PATCH "${KONG_ADMIN_URL}/routes/${name}" \
-      --data "paths[]=${path}" \
-      --data "strip_path=false" > /dev/null
-  else
-    # Create new route
-    curl -s -X POST "${KONG_ADMIN_URL}/services/${service}/routes" \
-      --data "name=${name}" \
-      --data "paths[]=${path}" \
-      --data "strip_path=false" > /dev/null
-  fi
+  # Delete existing route first to ensure clean state
+  curl -s -X DELETE "${KONG_ADMIN_URL}/routes/${name}" > /dev/null 2>&1 || true
+  
+  # Create new route
+  curl -s -X POST "${KONG_ADMIN_URL}/services/${service}/routes" \
+    --data "name=${name}" \
+    --data "paths[]=${path}" \
+    --data "strip_path=${strip}" > /dev/null
 }
 
 # Function to enable plugin globally or on service
@@ -88,11 +84,11 @@ enable_plugin() {
 echo ""
 echo "Creating services..."
 
-create_service "auth-service" "http://auth-service:3000"
-create_service "user-service" "http://user-service:3001"
-create_service "product-service" "http://product-service:3002"
-create_service "bidding-service" "http://bidding-service:3003"
-create_service "recommendation-service" "http://recommendation-service:3004"
+create_service "auth-service" "http://auth-service:3000/auth"
+create_service "user-service" "http://user-service:3001/users"
+create_service "product-service" "http://product-service:3002/products"
+create_service "bidding-service" "http://bidding-service:3003/bids"
+create_service "recommendation-service" "http://recommendation-service:3004/recommendations"
 
 # ============================================
 # Create Routes
@@ -100,27 +96,27 @@ create_service "recommendation-service" "http://recommendation-service:3004"
 echo ""
 echo "Creating routes..."
 
-# Auth Service Routes
-create_route "auth-service" "auth-route" "/api/auth"
+# Auth Service Routes - /api/auth/* strips to /* then service adds /auth
+create_route "auth-service" "auth-route" "/api/auth" "true"
 
-# User Service Routes
-create_route "user-service" "user-route" "/api/users"
+# User Service Routes - /api/users/* strips to /* then service adds /users
+create_route "user-service" "user-route" "/api/users" "true"
 
-# Product Service Routes
-create_route "product-service" "product-route" "/api/products"
+# Product Service Routes - /api/products/* strips to /* then service adds /products
+create_route "product-service" "product-route" "/api/products" "true"
 
-# Bidding Service Routes
-create_route "bidding-service" "bidding-route" "/api/bids"
+# Bidding Service Routes - /api/bids/* strips to /* then service adds /bids
+create_route "bidding-service" "bidding-route" "/api/bids" "true"
 
-# Recommendation Service Routes
-create_route "recommendation-service" "recommendation-route" "/api/recommendations"
+# Recommendation Service Routes - /api/recommendations/* strips to /* then service adds /recommendations
+create_route "recommendation-service" "recommendation-route" "/api/recommendations" "true"
 
-# Health check routes (direct access without /api prefix)
-create_route "auth-service" "auth-health-route" "/auth/health"
-create_route "user-service" "user-health-route" "/users/health"
-create_route "product-service" "product-health-route" "/products/health"
-create_route "bidding-service" "bidding-health-route" "/bids/health"
-create_route "recommendation-service" "recommendation-health-route" "/recommendations/health"
+# Health check routes
+create_route "auth-service" "auth-health-route" "/health/auth" "false"
+create_route "user-service" "user-health-route" "/health/users" "false"
+create_route "product-service" "product-health-route" "/health/products" "false"
+create_route "bidding-service" "bidding-health-route" "/health/bids" "false"
+create_route "recommendation-service" "recommendation-health-route" "/health/recommendations" "false"
 
 # ============================================
 # Configure Plugins
