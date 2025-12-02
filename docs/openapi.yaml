@@ -48,11 +48,7 @@ components:
 
     RegisterRequest:
       type: object
-      required:
-        - email
-        - password
-        - role
-        - name
+      required: [email, password, role, name]
       properties:
         email:
           type: string
@@ -72,17 +68,17 @@ components:
 
     LoginRequest:
       type: object
-      required:
-        - email
-        - password
+      required: [email, password]
       properties:
         email:
           type: string
           format: email
+          example: user@example.com
         password:
           type: string
+          example: password123
 
-    LoginResponse:
+    AuthResponse:
       type: object
       properties:
         success:
@@ -90,40 +86,61 @@ components:
         data:
           type: object
           properties:
-            accessToken:
-              type: string
-            refreshToken:
-              type: string
-            expiresIn:
-              type: integer
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+            tokens:
+              type: object
+              properties:
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+                expiresIn:
+                  type: integer
 
     RefreshTokenRequest:
       type: object
-      required:
-        - refreshToken
+      required: [userId, refreshToken]
       properties:
+        userId:
+          type: string
         refreshToken:
           type: string
 
     Address:
       type: object
+      required: [street, city, province, postalCode]
       properties:
         street:
           type: string
+          example: 123 Main St
         city:
           type: string
+          example: Jakarta
         province:
           type: string
+          example: DKI Jakarta
         postalCode:
           type: string
+          example: "12345"
 
     UserProfile:
       type: object
+      required: [name]
       properties:
         name:
           type: string
+          example: John Doe
         phone:
           type: string
+          example: "+1234567890"
         address:
           $ref: '#/components/schemas/Address'
         avatar:
@@ -131,16 +148,15 @@ components:
 
     CreateUserRequest:
       type: object
-      required:
-        - email
-        - password
-        - role
+      required: [email, password, role, profile]
       properties:
         email:
           type: string
           format: email
+          example: user@example.com
         password:
           type: string
+          example: password123
         role:
           type: string
           enum: [buyer, seller]
@@ -165,49 +181,31 @@ components:
           type: string
           format: date-time
 
-    Auction:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [draft, active, ended, cancelled]
-        startTime:
-          type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        winnerId:
-          type: string
-        totalBids:
-          type: integer
-
     CreateProductRequest:
       type: object
-      required:
-        - sellerId
-        - title
-        - description
-        - category
-        - startingPrice
-        - condition
+      required: [sellerId, title, description, category, startingPrice, condition]
       properties:
         sellerId:
           type: string
         title:
           type: string
+          example: Vintage Watch
         description:
           type: string
+          example: A beautiful vintage watch
         category:
           type: string
+          example: watches
         images:
           type: array
           items:
             type: string
         startingPrice:
           type: number
+          example: 100
         buyNowPrice:
           type: number
+          example: 500
         condition:
           type: string
           enum: [new, used]
@@ -243,7 +241,21 @@ components:
         specifications:
           type: object
         auction:
-          $ref: '#/components/schemas/Auction'
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [draft, active, ended, cancelled]
+            startTime:
+              type: string
+              format: date-time
+            endTime:
+              type: string
+              format: date-time
+            winnerId:
+              type: string
+            totalBids:
+              type: integer
         createdAt:
           type: string
           format: date-time
@@ -253,23 +265,20 @@ components:
 
     StartAuctionRequest:
       type: object
-      required:
-        - startTime
-        - endTime
+      required: [startTime, endTime]
       properties:
         startTime:
           type: string
           format: date-time
+          example: "2025-12-03T00:00:00Z"
         endTime:
           type: string
           format: date-time
+          example: "2025-12-10T00:00:00Z"
 
     CreateBidRequest:
       type: object
-      required:
-        - productId
-        - userId
-        - amount
+      required: [productId, userId, amount]
       properties:
         productId:
           type: string
@@ -277,6 +286,7 @@ components:
           type: string
         amount:
           type: number
+          example: 150
 
     Bid:
       type: object
@@ -295,22 +305,10 @@ components:
         timestamp:
           type: integer
 
-    Recommendation:
-      type: object
-      properties:
-        productId:
-          type: string
-        title:
-          type: string
-        category:
-          type: string
-        score:
-          type: number
-
 paths:
-  # Auth endpoints
   /auth/register:
     post:
+      operationId: registerUser
       tags: [Auth]
       summary: Register a new user
       requestBody:
@@ -322,11 +320,16 @@ paths:
       responses:
         '201':
           description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
         '409':
           description: Email already exists
 
   /auth/login:
     post:
+      operationId: loginUser
       tags: [Auth]
       summary: Login user
       requestBody:
@@ -341,12 +344,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: '#/components/schemas/AuthResponse'
         '401':
           description: Invalid credentials
 
   /auth/logout:
     post:
+      operationId: logoutUser
       tags: [Auth]
       summary: Logout user
       security:
@@ -357,6 +361,7 @@ paths:
 
   /auth/refresh-token:
     post:
+      operationId: refreshToken
       tags: [Auth]
       summary: Refresh access token
       requestBody:
@@ -371,10 +376,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: '#/components/schemas/AuthResponse'
 
   /auth/verify:
     get:
+      operationId: verifySession
       tags: [Auth]
       summary: Verify session
       security:
@@ -385,9 +391,9 @@ paths:
         '401':
           description: Invalid or expired session
 
-  # User endpoints
   /users:
     post:
+      operationId: createUser
       tags: [Users]
       summary: Create a new user
       requestBody:
@@ -406,6 +412,7 @@ paths:
 
   /users/{id}:
     get:
+      operationId: getUserById
       tags: [Users]
       summary: Get user by ID
       security:
@@ -425,8 +432,8 @@ paths:
                 $ref: '#/components/schemas/User'
         '404':
           description: User not found
-
     put:
+      operationId: updateUser
       tags: [Users]
       summary: Update user
       security:
@@ -442,11 +449,14 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                profile:
+                  $ref: '#/components/schemas/UserProfile'
       responses:
         '200':
           description: User updated
-
     delete:
+      operationId: deleteUser
       tags: [Users]
       summary: Delete user (soft delete)
       security:
@@ -463,6 +473,7 @@ paths:
 
   /users/seller/{sellerId}/products:
     get:
+      operationId: getSellerProducts
       tags: [Users]
       summary: Get seller's products
       security:
@@ -479,6 +490,7 @@ paths:
 
   /users/buyer/{buyerId}/bids:
     get:
+      operationId: getBuyerBids
       tags: [Users]
       summary: Get buyer's bids
       security:
@@ -493,9 +505,9 @@ paths:
         '200':
           description: Bids list
 
-  # Product endpoints
   /products:
     get:
+      operationId: listProducts
       tags: [Products]
       summary: List products with pagination
       parameters:
@@ -529,8 +541,8 @@ paths:
       responses:
         '200':
           description: Products list
-
     post:
+      operationId: createProduct
       tags: [Products]
       summary: Create a new product
       security:
@@ -551,6 +563,7 @@ paths:
 
   /products/{id}:
     get:
+      operationId: getProductById
       tags: [Products]
       summary: Get product by ID
       parameters:
@@ -566,8 +579,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-
     put:
+      operationId: updateProduct
       tags: [Products]
       summary: Update product (draft only)
       security:
@@ -586,8 +599,8 @@ paths:
       responses:
         '200':
           description: Product updated
-
     delete:
+      operationId: deleteProduct
       tags: [Products]
       summary: Delete product (soft delete)
       security:
@@ -604,6 +617,7 @@ paths:
 
   /products/seller/{sellerId}:
     get:
+      operationId: getProductsBySeller
       tags: [Products]
       summary: Get products by seller
       parameters:
@@ -618,6 +632,7 @@ paths:
 
   /products/category/{category}:
     get:
+      operationId: getProductsByCategory
       tags: [Products]
       summary: Get products by category
       parameters:
@@ -632,6 +647,7 @@ paths:
 
   /products/{id}/auction-status:
     get:
+      operationId: getAuctionStatus
       tags: [Products]
       summary: Get auction status
       parameters:
@@ -646,6 +662,7 @@ paths:
 
   /products/{id}/start-auction:
     put:
+      operationId: startAuction
       tags: [Products]
       summary: Start auction
       security:
@@ -668,6 +685,7 @@ paths:
 
   /products/{id}/end-auction:
     put:
+      operationId: endAuction
       tags: [Products]
       summary: End auction
       security:
@@ -682,9 +700,9 @@ paths:
         '200':
           description: Auction ended
 
-  # Bid endpoints
   /bids:
     post:
+      operationId: placeBid
       tags: [Bids]
       summary: Place a bid
       security:
@@ -709,6 +727,7 @@ paths:
 
   /bids/product/{productId}:
     get:
+      operationId: getProductBids
       tags: [Bids]
       summary: Get bids for a product
       parameters:
@@ -729,6 +748,7 @@ paths:
 
   /bids/product/{productId}/highest:
     get:
+      operationId: getHighestBid
       tags: [Bids]
       summary: Get highest bid for a product
       parameters:
@@ -745,24 +765,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Bid'
 
-  /bids/user/{userId}:
-    get:
-      tags: [Bids]
-      summary: Get user's bids
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: User's bids
-
   /bids/product/{productId}/winner:
     get:
+      operationId: getAuctionWinner
       tags: [Bids]
       summary: Get auction winner
       parameters:
@@ -777,9 +782,26 @@ paths:
         '400':
           description: Auction not ended
 
-  # Recommendation endpoints
+  /bids/user/{userId}:
+    get:
+      operationId: getUserBids
+      tags: [Bids]
+      summary: Get user's bids
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User's bids
+
   /recommendations/user/{userId}:
     get:
+      operationId: getUserRecommendations
       tags: [Recommendations]
       summary: Get recommendations for user
       security:
@@ -793,15 +815,10 @@ paths:
       responses:
         '200':
           description: Recommendations
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Recommendation'
 
   /recommendations/product/{productId}/similar:
     get:
+      operationId: getSimilarProducts
       tags: [Recommendations]
       summary: Get similar products
       parameters:
@@ -816,6 +833,7 @@ paths:
 
   /recommendations/train:
     post:
+      operationId: trainRecommendationModel
       tags: [Recommendations]
       summary: Train recommendation model
       security:
