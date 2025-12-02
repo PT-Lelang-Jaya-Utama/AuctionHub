@@ -712,7 +712,12 @@ paths:
     get:
       operationId: getUserRecommendations
       tags: [Recommendations]
-      summary: Get recommendations for user
+      summary: Get personalized recommendations for user
+      description: |
+        Returns products recommended for the user based on:
+        - Categories they've bid on or viewed
+        - Products similar to ones they've viewed
+        - Recency of interactions
       security:
         - bearerAuth: []
       parameters:
@@ -721,32 +726,71 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
       responses:
         '200':
           description: Recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    productId:
+                      type: string
+                    category:
+                      type: string
+                    title:
+                      type: string
+                    score:
+                      type: number
 
   /recommendations/product/{productId}/similar:
     get:
       operationId: getSimilarProducts
       tags: [Recommendations]
       summary: Get similar products
+      description: |
+        Returns products similar to the given product based on:
+        - Same category (+3 points)
+        - Shared bidders (+2 per user)
+        - Shared viewers (+1 per user)
+        - Pre-computed similarity score
       parameters:
         - name: productId
           in: path
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
       responses:
         '200':
           description: Similar products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    productId:
+                      type: string
+                    category:
+                      type: string
+                    title:
+                      type: string
+                    similarityScore:
+                      type: number
 
-  /recommendations/train:
-    post:
-      operationId: trainRecommendationModel
-      tags: [Recommendations]
-      summary: Train recommendation model
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Training started
+

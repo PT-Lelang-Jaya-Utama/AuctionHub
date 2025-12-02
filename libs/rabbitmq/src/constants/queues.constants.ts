@@ -8,6 +8,7 @@ export const QUEUES = {
   PRODUCT_CREATED: 'product.created',
   PRODUCT_UPDATED: 'product.updated',
   PRODUCT_DELETED: 'product.deleted',
+  PRODUCT_VIEWED: 'product.viewed',
   AUCTION_STARTED: 'auction.started',
   AUCTION_ENDED: 'auction.ended',
 

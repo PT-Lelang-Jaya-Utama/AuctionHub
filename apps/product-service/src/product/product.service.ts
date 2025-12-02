@@ -75,12 +75,36 @@ export class ProductService {
     }
   }
 
-  async findById(id: string): Promise<ProductDocument> {
+  async findById(id: string, viewerId?: string): Promise<ProductDocument> {
     const product = await this.productRepository.findById(id);
     if (!product) {
       throw new NotFoundError('Product', id);
     }
+    
+    // Publish view event if viewer is provided (authenticated user)
+    if (viewerId) {
+      await this.publishProductViewedEvent(product, viewerId);
+    }
+    
     return product;
+  }
+
+  private async publishProductViewedEvent(product: ProductDocument, viewerId: string): Promise<void> {
+    try {
+      await this.rabbitMQService.publish(
+        EXCHANGES.PRODUCT_EVENTS,
+        ROUTING_KEYS.PRODUCT_VIEWED,
+        {
+          productId: product._id.toString(),
+          userId: viewerId,
+          category: product.category,
+          timestamp: Date.now(),
+        },
+      );
+      this.logger.debug(`Published product.viewed event for product: ${product._id} by user: ${viewerId}`);
+    } catch (error) {
+      this.logger.error(`Failed to publish product.viewed event: ${error}`);
+    }
   }
 
   async findAll(

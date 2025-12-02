@@ -23,8 +23,3 @@ export class SimilarProductDto {
   title: string;
   similarityScore: number;
 }
-
-export class TrainResponseDto {
-  message: string;
-  relationshipsCreated: number;
-}

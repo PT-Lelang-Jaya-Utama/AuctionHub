@@ -1,10 +1,9 @@
-import { Controller, Get, Post, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { RecommendationService } from './recommendation.service';
 import {
   GetRecommendationsQueryDto,
   RecommendedProductDto,
   SimilarProductDto,
-  TrainResponseDto,
 } from './dto';
 
 @Controller('recommendations')
@@ -31,10 +30,5 @@ export class RecommendationController {
       productId,
       query.limit,
     );
-  }
-
-  @Post('train')
-  async train(): Promise<TrainResponseDto> {
-    return this.recommendationService.train();
   }
 }

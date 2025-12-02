@@ -314,36 +314,68 @@ Authorization: Bearer <token>
 
 ## Recommendation Service (`/api/recommendations`)
 
+The recommendation service uses Neo4j graph database to track user behavior and generate personalized recommendations.
+
+### How Recommendations Work
+
+**Data Collected:**
+- User views (when authenticated users view products)
+- Bids placed
+- Auctions won
+
+**Similarity Score Calculation:**
+Products are considered similar based on:
+- Same category (+3 points)
+- Shared bidders - users who bid on both products (+2 per user)
+- Shared viewers - users who viewed both products (+1 per user)
+- Pre-computed similarity score from auction data
+
+**User Recommendation Score:**
+- Products in categories user has bid on (+2 per category)
+- Products similar to ones user viewed (+1.5)
+- Recency boost for recently viewed items (+0.5)
+
+Similarity relationships are automatically updated when auctions end.
+
 ### Get User Recommendations
 ```
-GET /api/recommendations/user/:userId
+GET /api/recommendations/user/:userId?limit=10
 Authorization: Bearer <token>
 ```
 
+**Query Parameters:**
+- `limit` - Number of recommendations (default: 10, max: 50)
+
 **Response (200):**
 ```json
-{
-  "success": true,
-  "data": [
-    {
-      "productId": "...",
-      "title": "Similar Watch",
-      "category": "watches",
-      "score": 0.85
-    }
-  ]
-}
+[
+  {
+    "productId": "...",
+    "title": "Similar Watch",
+    "category": "watches",
+    "score": 8.5
+  }
+]
 ```
 
 ### Get Similar Products
 ```
-GET /api/recommendations/product/:productId/similar
+GET /api/recommendations/product/:productId/similar?limit=10
 ```
 
-### Train Recommendation Model
-```
-POST /api/recommendations/train
-Authorization: Bearer <token>
+**Query Parameters:**
+- `limit` - Number of similar products (default: 10, max: 50)
+
+**Response (200):**
+```json
+[
+  {
+    "productId": "...",
+    "title": "Another Watch",
+    "category": "watches",
+    "similarityScore": 12
+  }
+]
 ```
 
 ---

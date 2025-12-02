@@ -21,6 +21,13 @@ interface ProductCreatedPayload {
   category: string;
 }
 
+interface ProductViewedPayload {
+  productId: string;
+  userId: string;
+  category: string;
+  timestamp: number;
+}
+
 interface BidPlacedPayload {
   bidId: string;
   productId: string;
@@ -34,6 +41,14 @@ interface AuctionWinnerPayload {
   winnerId: string | null;
   winningBid: number;
   timestamp?: number;
+}
+
+interface AuctionEndedPayload {
+  productId: string;
+  sellerId: string;
+  finalPrice: number;
+  winnerId: string | null;
+  totalBids: number;
 }
 
 @Injectable()
@@ -66,6 +81,14 @@ export class RecommendationMessageConsumer implements OnModuleInit {
       this.handleProductCreated.bind(this),
     );
 
+    // Subscribe to product.viewed events
+    await this.rabbitMQService.subscribe(
+      EXCHANGES.PRODUCT_EVENTS,
+      `${QUEUES.PRODUCT_VIEWED}.recommendation-service`,
+      ROUTING_KEYS.PRODUCT_VIEWED,
+      this.handleProductViewed.bind(this),
+    );
+
     // Subscribe to bid.placed events
     await this.rabbitMQService.subscribe(
       EXCHANGES.BID_EVENTS,
@@ -80,6 +103,14 @@ export class RecommendationMessageConsumer implements OnModuleInit {
       `${QUEUES.AUCTION_WINNER}.recommendation-service`,
       ROUTING_KEYS.AUCTION_WINNER,
       this.handleAuctionWinner.bind(this),
+    );
+
+    // Subscribe to auction.ended events (triggers similarity update)
+    await this.rabbitMQService.subscribe(
+      EXCHANGES.PRODUCT_EVENTS,
+      `${QUEUES.AUCTION_ENDED}.recommendation-service`,
+      ROUTING_KEYS.AUCTION_ENDED,
+      this.handleAuctionEnded.bind(this),
     );
 
     this.logger.log('Recommendation message consumers initialized');
@@ -115,6 +146,28 @@ export class RecommendationMessageConsumer implements OnModuleInit {
       this.logger.log(`Created Product node for: ${productId}`);
     } catch (error) {
       this.logger.error(`Error processing product.created event: ${error}`);
+      throw error;
+    }
+  }
+
+  private async handleProductViewed(
+    message: IMessage<ProductViewedPayload>,
+  ): Promise<void> {
+    try {
+      const { productId, userId, timestamp } = message.payload;
+      this.logger.debug(
+        `Received product.viewed event for product: ${productId} by user: ${userId}`,
+      );
+
+      // Ensure user node exists
+      await this.repository.createUserNode({ userId, role: 'buyer' });
+
+      // Create VIEWED relationship
+      await this.repository.createViewedRelationship(userId, productId, timestamp);
+
+      this.logger.log(`Created VIEWED relationship: ${userId} -> ${productId}`);
+    } catch (error) {
+      this.logger.error(`Error processing product.viewed event: ${error}`);
       throw error;
     }
   }
@@ -167,6 +220,36 @@ export class RecommendationMessageConsumer implements OnModuleInit {
       }
     } catch (error) {
       this.logger.error(`Error processing auction.winner event: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle auction.ended event - triggers similarity relationship update
+   * This replaces the manual /train endpoint with automatic updates
+   */
+  private async handleAuctionEnded(
+    message: IMessage<AuctionEndedPayload>,
+  ): Promise<void> {
+    try {
+      const { productId, totalBids } = message.payload;
+      this.logger.debug(
+        `Received auction.ended event for product: ${productId}`,
+      );
+
+      // Only update similarity if there were bids (meaningful data)
+      if (totalBids > 0) {
+        const relationshipsCreated = await this.repository.updateSimilarityForProduct(productId);
+        this.logger.log(
+          `Updated similarity relationships for product: ${productId}, created: ${relationshipsCreated}`,
+        );
+      } else {
+        this.logger.debug(
+          `Skipping similarity update for product: ${productId} (no bids)`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Error processing auction.ended event: ${error}`);
       throw error;
     }
   }

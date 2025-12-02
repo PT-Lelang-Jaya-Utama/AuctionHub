@@ -11,13 +11,14 @@ import {
   HttpStatus,
   UseGuards,
   ForbiddenException,
+  Headers,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductFiltersDto } from './dto/product-filters.dto';
 import { StartAuctionDto } from './dto/start-auction.dto';
-import { ApiResponse, PaginatedResponse, JwtAuthGuard, CurrentUser, CurrentUserData } from '@app/shared';
+import { ApiResponse, PaginatedResponse, JwtAuthGuard, CurrentUser, CurrentUserData, OptionalJwtAuthGuard } from '@app/shared';
 
 @Controller('products')
 export class ProductController {
@@ -56,8 +57,12 @@ export class ProductController {
   }
 
   @Get(':id')
-  async getProductById(@Param('id') id: string) {
-    const product = await this.productService.findById(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  async getProductById(
+    @Param('id') id: string,
+    @CurrentUser() user?: CurrentUserData,
+  ) {
+    const product = await this.productService.findById(id, user?.userId);
     return ApiResponse.success(product.toObject());
   }
 

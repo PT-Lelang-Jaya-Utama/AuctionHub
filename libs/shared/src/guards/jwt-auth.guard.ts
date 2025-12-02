@@ -45,3 +45,39 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 }
+
+/**
+ * Optional JWT Auth Guard - allows unauthenticated requests but attaches user if token is valid
+ * Useful for endpoints that work for both authenticated and anonymous users
+ */
+@Injectable()
+export class OptionalJwtAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const authHeader = request.headers.authorization;
+
+    // No auth header - allow request but no user attached
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return true;
+    }
+
+    const token = authHeader.substring(7);
+
+    try {
+      const secret = process.env.JWT_SECRET || 'your-secret-key';
+      const decoded = jwt.verify(token, secret) as JwtPayload;
+      
+      // Attach user info to request
+      request.user = {
+        userId: decoded.sub,
+        sessionId: decoded.sessionId,
+        email: decoded.email,
+        role: decoded.role,
+      };
+    } catch {
+      // Invalid token - still allow request but no user attached
+    }
+
+    return true;
+  }
+}

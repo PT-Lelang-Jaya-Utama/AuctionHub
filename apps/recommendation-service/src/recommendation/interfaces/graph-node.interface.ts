@@ -14,7 +14,9 @@ export interface CategoryNode {
 }
 
 export interface ViewedRelationship {
-  timestamp: number;
+  viewCount: number;
+  firstViewedAt: number;
+  lastViewedAt: number;
 }
 
 export interface BidRelationship {
@@ -28,6 +30,9 @@ export interface WonRelationship {
 
 export interface SimilarToRelationship {
   score: number;
+  sharedBidders: number;
+  sharedViewers: number;
+  updatedAt: number;
 }
 
 export interface RecommendedProduct {

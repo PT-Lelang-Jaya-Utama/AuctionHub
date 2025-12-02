@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RecommendationRepository } from './repositories';
-import {
-  RecommendedProductDto,
-  SimilarProductDto,
-  TrainResponseDto,
-} from './dto';
+import { RecommendedProductDto, SimilarProductDto } from './dto';
 
 @Injectable()
 export class RecommendationService {
@@ -26,18 +22,5 @@ export class RecommendationService {
   ): Promise<SimilarProductDto[]> {
     this.logger.debug(`Getting similar products for: ${productId}`);
     return this.repository.getSimilarProducts(productId, limit);
-  }
-
-  async train(): Promise<TrainResponseDto> {
-    this.logger.log('Starting recommendation model training...');
-    const relationshipsCreated =
-      await this.repository.rebuildSimilarityRelationships();
-    this.logger.log(
-      `Training complete. Created ${relationshipsCreated} relationships`,
-    );
-    return {
-      message: 'Training completed successfully',
-      relationshipsCreated,
-    };
   }
 }
