@@ -112,7 +112,7 @@ export class AuthService {
     
     if (session) {
       await this.sessionRepository.deleteSession(sessionId);
-      await this.sessionRepository.deleteRefreshToken(session.userId);
+      await this.sessionRepository.deleteRefreshTokenByUserId(session.userId);
     }
   }
 

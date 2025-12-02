@@ -92,8 +92,12 @@ export class SessionRepository {
     };
 
     // Store by token so we can look up userId from token
-    const key = `refresh:${token}`;
-    await this.redis.setex(key, this.refreshTokenTTL, JSON.stringify({ userId, ...refreshToken }));
+    const tokenKey = `refresh:${token}`;
+    await this.redis.setex(tokenKey, this.refreshTokenTTL, JSON.stringify({ userId, ...refreshToken }));
+
+    // Also store mapping from userId to token for logout
+    const userKey = `refresh_user:${userId}`;
+    await this.redis.setex(userKey, this.refreshTokenTTL, token);
 
     return { token, refreshToken };
   }
@@ -110,8 +114,32 @@ export class SessionRepository {
   }
 
   async deleteRefreshToken(token: string): Promise<boolean> {
-    const key = `refresh:${token}`;
-    const result = await this.redis.del(key);
+    // Get userId from token data first
+    const tokenData = await this.getRefreshTokenData(token);
+    
+    const tokenKey = `refresh:${token}`;
+    const result = await this.redis.del(tokenKey);
+    
+    // Also delete the user mapping if we have userId
+    if (tokenData?.userId) {
+      const userKey = `refresh_user:${tokenData.userId}`;
+      await this.redis.del(userKey);
+    }
+    
+    return result > 0;
+  }
+
+  async deleteRefreshTokenByUserId(userId: string): Promise<boolean> {
+    // Get token from user mapping
+    const userKey = `refresh_user:${userId}`;
+    const token = await this.redis.get(userKey);
+    
+    if (token) {
+      const tokenKey = `refresh:${token}`;
+      await this.redis.del(tokenKey);
+    }
+    
+    const result = await this.redis.del(userKey);
     return result > 0;
   }
 
