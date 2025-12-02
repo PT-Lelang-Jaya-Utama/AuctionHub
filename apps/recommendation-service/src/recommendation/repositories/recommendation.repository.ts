@@ -214,9 +214,9 @@ export class RecommendationRepository implements OnModuleInit {
                recommended.title as title,
                (categoryScore * 2 + similarityScore) as score
         ORDER BY score DESC
-        LIMIT $limit
+        LIMIT toInteger($limit)
         `,
-        { userId, limit: limit },
+        { userId, limit: Math.floor(limit) },
       );
 
       return result.records.map((record) => ({
@@ -259,9 +259,9 @@ export class RecommendationRepository implements OnModuleInit {
                similar.title as title,
                (categoryMatch * 3 + sharedBidders * 2 + explicitScore) as similarityScore
         ORDER BY similarityScore DESC
-        LIMIT $limit
+        LIMIT toInteger($limit)
         `,
-        { productId, limit: limit },
+        { productId, limit: Math.floor(limit) },
       );
 
       return result.records.map((record) => ({
