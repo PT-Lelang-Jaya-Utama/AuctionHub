@@ -99,7 +99,8 @@ export class UserClientService {
 
   async getUserById(userId: string): Promise<IUser> {
     try {
-      const response = await fetch(`${this.userServiceUrl}/users/${userId}`, {
+      // Use internal endpoint that doesn't require auth
+      const response = await fetch(`${this.userServiceUrl}/users/internal/${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

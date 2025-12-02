@@ -304,8 +304,7 @@ services:
       - PORT=3001
       - MONGODB_URI=mongodb://mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/eauction?replicaSet=rs0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - PRODUCT_SERVICE_URL=http://product-service:3002
-      - BIDDING_SERVICE_URL=http://bidding-service:3003
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
     networks:
       - eauction-network
     depends_on:
@@ -335,6 +334,7 @@ services:
       - USER_SERVICE_URL=http://user-service:3001
       - BIDDING_SERVICE_URL=http://bidding-service:3003
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
     networks:
       - eauction-network
     depends_on:
@@ -367,6 +367,7 @@ services:
       - PRODUCT_SERVICE_URL=http://product-service:3002
       - USER_SERVICE_URL=http://user-service:3001
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
     networks:
       - eauction-network
     depends_on:
