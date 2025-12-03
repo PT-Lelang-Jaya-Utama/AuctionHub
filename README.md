@@ -706,7 +706,7 @@ This project is licensed under the MIT License.
 
 ## 👥 Authors
 
-- **PT Kampus Jaya Utama** - Teknologi Basis Data Non Relational
+- **PT Lelang Jaya Utama** - Teknologi Basis Data Non Relational
 
 ## 🙏 Acknowledgments
 
