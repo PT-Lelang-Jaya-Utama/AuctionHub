@@ -1,4 +1,4 @@
-# CampusHub-Action - E-Auction Platform
+# ActionHub - E-Auction Platform
 
 Platform lelang online berbasis mikroservis dengan polyglot persistence menggunakan NestJS, MongoDB, Redis, Neo4j, RabbitMQ, dan Kong API Gateway.
 
@@ -264,7 +264,7 @@ Sentinel (26379) ← Monitoring & Failover
 ### 1. Clone Repository
 ```bash
 git clone <repository-url>
-cd CampusHub-Action
+cd ActionHub
 ```
 
 ### 2. Install Dependencies (untuk development)
@@ -476,7 +476,7 @@ RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 ## 📁 Struktur Folder
 
 ```
-CampusHub-Action/
+ActionHub/
 ├── apps/                          # Microservices
 │   ├── auth-service/              # Authentication & Session Management
 │   │   ├── src/
@@ -716,5 +716,3 @@ This project is licensed under the MIT License.
 - Docker & container ecosystem
 
 ---
-
-**Built with ❤️ using NestJS and Polyglot Persistence**
